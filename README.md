@@ -1,2 +1,3 @@
 # Farming
-Mono+Dual+Poly Farming
+
+Mono + Dual + Poly Farming
