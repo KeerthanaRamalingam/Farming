@@ -285,25 +285,18 @@ contract PolyFarm is Ownable {
 
     function farm(
         uint256 _amount,
-        uint256 tokenID,
+        address _token,
         uint256 _lockableDays
     ) public {
         userInfo storage user = users[msg.sender];
         require(user.farmedToken == 0, "Muliple farm not allowed");
-        require(
-            _amount >= minimumtokenDeposit[tokens[tokenID]],
-            "Invalid amount"
-        );
+        require(_amount >= minimumtokenDeposit[_token], "Invalid amount");
         require(allocation[_lockableDays] > 0, "Invalid day selection");
-        ITRC20(tokens[tokenID]).transferFrom(
-            msg.sender,
-            address(this),
-            _amount
-        );
+        ITRC20(_token).transferFrom(msg.sender, address(this), _amount);
         user.farmedToken = _amount;
         user.lastUpdated = now;
         user.lockableDays = _lockableDays;
-        user.token = tokens[tokenID];
+        user.token = _token;
     }
 
     function farmTRX(uint256 _lockableDays) public payable {
@@ -332,8 +325,17 @@ contract PolyFarm is Ownable {
             .div(10000)
             .mul(user.lockableDays);
             uleReward = wyzthReward.mul(10);
-            if (user.token == wyzthTOKEN) {
+            if (user.token == tokens[0]) {
                 return (wyzthReward, uleReward);
+            } else if (user.token == tokens[3]) {
+                return (wyzthReward.mul(10), uleReward.mul(10));
+            } else if (user.token == tokens[2]) {
+                return (
+                    wyzthReward.div(2).mul(1E13),
+                    uleReward.div(2).mul(1E13)
+                );
+            } else if (user.token == tokens[1]) {
+                return (wyzthReward.div(2), uleReward.div(2));
             } else {
                 return (
                     wyzthReward.div(2).mul(1E12),
@@ -352,8 +354,11 @@ contract PolyFarm is Ownable {
         if (user.token == address(0)) {
             msg.sender.transfer(user.farmedToken);
             amounttoTransferred = wyzthReward;
-        } else {
+        } else if (user.token == tokens[0]) {
             amounttoTransferred = user.farmedToken.add(wyzthReward);
+        } else {
+            ITRC20(user.token).transfer(msg.sender, user.farmedToken);
+            amounttoTransferred = wyzthReward;
         }
         safeTransferWYZ(msg.sender, amounttoTransferred);
         safeTransferULE(msg.sender, uleReward);
