@@ -36,7 +36,7 @@ describe('Poly farm', () => {
         await farm.connect(accounts[0]).deployed();
 
         await farm.addTokens([tokenContract.address, USDJ.address, BTC.address, ETH.address],
-            [web3.utils.toWei('100', "ether"), web3.utils.toWei('100', "ether"), 400000, web3.utils.toWei('0.05', "ether")])
+            [web3.utils.toWei('100', "ether"), web3.utils.toWei('10', "ether"), 400000, web3.utils.toWei('0.05', "ether")])
 
     });
 
@@ -47,6 +47,7 @@ describe('Poly farm', () => {
         expect(await farm.tokens(1)).to.equal(USDJ.address);
         expect(await farm.minimumtokenDeposit(tokenContract.address)).to.equal(web3.utils.toWei('100', "ether"));
         expect(await farm.minimumtokenDeposit(BTC.address)).to.equal(400000);
+        expect(await farm.minimumtokenDeposit(ETH.address)).to.equal(web3.utils.toWei('0.05', "ether"));
     });
 
     it("should Farm with 100 TRX and harvest wyzth and ULE", async function () {
@@ -83,7 +84,7 @@ describe('Poly farm', () => {
         await tokenContract.connect(accounts[1]).approve(farm.address, web3.utils.toWei('100', "ether"));
         expect(await tokenContract.allowance(accounts[1].address, farm.address)).to.equal(web3.utils.toWei('100', "ether"));
 
-        await farm.connect(accounts[1]).farm(web3.utils.toWei('100', "ether"),0, 90);
+        await farm.connect(accounts[1]).farm(web3.utils.toWei('100', "ether"), tokenContract.address, 90);
         expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('100', "ether"));
 
         // Increase time to 90 days
@@ -106,26 +107,113 @@ describe('Poly farm', () => {
         expect(await web3.eth.getBalance(farm.address)).to.equal(web3.utils.toWei('0', "ether"));
     })
 
-    // it("Emergency Withdraw", async function () {
-    //     await tokenContract.connect(accounts[0]).transfer(accounts[1].address, web3.utils.toWei('100', "ether"));
-    //     await tokenContract.connect(accounts[1]).approve(farm.address, web3.utils.toWei('100', "ether"));
-    //     expect(await tokenContract.allowance(accounts[1].address, farm.address)).to.equal(web3.utils.toWei('100', "ether"));
+    it("should Farm with 5 ETH and harvest wyzth and ULE", async function () {
+        await ETH.connect(accounts[0]).transfer(accounts[1].address, web3.utils.toWei('5', "ether"));
+        await ETH.connect(accounts[1]).approve(farm.address, web3.utils.toWei('5', "ether"));
+        expect(await ETH.allowance(accounts[1].address, farm.address)).to.equal(web3.utils.toWei('5', "ether"));
 
-    //     await farm.connect(accounts[1]).farmWYZTH(web3.utils.toWei('100', "ether"), 90);
-    //     expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('100', "ether"));
+        await farm.connect(accounts[1]).farm(web3.utils.toWei('5', "ether"), ETH.address, 90);
+        expect(await ETH.balanceOf(farm.address)).to.equal(web3.utils.toWei('5', "ether"));
 
-    //     await farm.connect(accounts[2]).farmTRX(90, { value: 100000000 });
-    //     const [Totalamount, last, lock, type]  = await farm.users(accounts[2].address);
-    //     expect(Totalamount).to.equal(100000000);
+        // Increase time to 90 days
+        await network.provider.send("evm_increaseTime", [8424000])
+        await network.provider.send("evm_mine")
 
-    //     await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('100', "ether"))
-    //     expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('100', "ether"));
+        var result = await farm.connect(accounts[1]).pendindRewards();
+        expect(result.wyzthReward).to.equal(web3.utils.toWei('45', "ether"));
+        expect(result.uleReward).to.equal(web3.utils.toWei('450', "ether"));
 
-    //     await farm.connect(accounts[0]).emergencyWithdraw(web3.utils.toWei('100', "ether"),web3.utils.toWei('100', "ether"));
-    //     expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
-    //     expect(await tokenContract2.balanceOf(farm.address)).to.equal(0);
-    //     expect(await web3.eth.getBalance(farm.address)).to.equal(web3.utils.toWei('0', "ether"));
+        await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('45', "ether"))
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('45', "ether"));
 
-    //   })
+        await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('450', "ether"))
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('450', "ether"));
+
+        await farm.connect(accounts[1]).harvest();
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(0);
+        expect(await ETH.balanceOf(farm.address)).to.equal(0);
+        expect(await ETH.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('5', "ether"));
+    })
+
+    it("should Farm with 100 USDJ and harvest wyzth and ULE", async function () {
+        await USDJ.connect(accounts[0]).transfer(accounts[1].address, web3.utils.toWei('100', "ether"));
+        await USDJ.connect(accounts[1]).approve(farm.address, web3.utils.toWei('100', "ether"));
+        expect(await USDJ.allowance(accounts[1].address, farm.address)).to.equal(web3.utils.toWei('100', "ether"));
+
+        await farm.connect(accounts[1]).farm(web3.utils.toWei('100', "ether"), USDJ.address, 90);
+        expect(await USDJ.balanceOf(farm.address)).to.equal(web3.utils.toWei('100', "ether"));
+
+        // Increase time to 90 days
+        await network.provider.send("evm_increaseTime", [8424000])
+        await network.provider.send("evm_mine")
+
+        var result = await farm.connect(accounts[1]).pendindRewards();
+        expect(result.wyzthReward).to.equal(web3.utils.toWei('45', "ether"));
+        expect(result.uleReward).to.equal(web3.utils.toWei('450', "ether"));
+
+        await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('45', "ether"))
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('45', "ether"));
+
+        await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('450', "ether"))
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('450', "ether"));
+
+        await farm.connect(accounts[1]).harvest();
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(0);
+        expect(await USDJ.balanceOf(farm.address)).to.equal(0);
+        expect(await USDJ.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('100', "ether"));
+        expect(await tokenContract.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('45', "ether"));
+        expect(await tokenContract2.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('450', "ether"));
+    })
+
+    it("should Farm with 0.1 BTC and harvest wyzth and ULE", async function () {
+        let amount = 10000000;
+        await BTC.connect(accounts[0]).transfer(accounts[1].address, amount);
+        await BTC.connect(accounts[1]).approve(farm.address, amount);
+        expect(await BTC.allowance(accounts[1].address, farm.address)).to.equal(amount);
+
+        await farm.connect(accounts[1]).farm(amount, BTC.address, 90);
+        expect(await BTC.balanceOf(farm.address)).to.equal(amount);
+
+        // Increase time to 90 days
+        await network.provider.send("evm_increaseTime", [8424000])
+        await network.provider.send("evm_mine")
+
+        var result = await farm.connect(accounts[1]).pendindRewards();
+        expect(result.wyzthReward).to.equal(web3.utils.toWei('45', "ether"));
+        expect(result.uleReward).to.equal(web3.utils.toWei('450', "ether"));
+
+        await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('45', "ether"))
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('45', "ether"));
+
+        await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('450', "ether"))
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('450', "ether"));
+
+        await farm.connect(accounts[1]).harvest();
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
+        expect(await tokenContract2.balanceOf(farm.address)).to.equal(0);
+        expect(await BTC.balanceOf(farm.address)).to.equal(0);
+        expect(await BTC.balanceOf(accounts[1].address)).to.equal(amount);
+    })
+
+    it("Emergency Withdraw", async function () {
+        await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('100', "ether"));
+        await USDJ.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('100', "ether"));
+        await BTC.connect(accounts[0]).transfer(farm.address, 10000000);
+        await ETH.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('100', "ether"));
+
+        await farm.connect(accounts[2]).farmTRX(90, { value: 100000000 });
+        const [Totalamount, last, lock, type] = await farm.users(accounts[2].address);
+        expect(Totalamount).to.equal(100000000);
+
+        await farm.connect(accounts[0]).emergencyWithdraw();
+        expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
+        expect(await USDJ.balanceOf(farm.address)).to.equal(0);
+        expect(await BTC.balanceOf(farm.address)).to.equal(0);
+        expect(await ETH.balanceOf(farm.address)).to.equal(0);
+        expect(await web3.eth.getBalance(farm.address)).to.equal(web3.utils.toWei('0', "ether"));
+
+    })
 
 });
