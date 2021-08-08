@@ -265,10 +265,10 @@ contract MonoFarm is Ownable {
     constructor(ITRC20 wyzth, ITRC20 ULE) public {
         wyzthTOKEN = wyzth;
         ULETOKEN = ULE;
-        allocation[90] = 100;
-        allocation[180] = 150;
-        allocation[270] = 200;
-        allocation[360] = 250;
+        allocation[90] = 10;
+        allocation[180] = 15;
+        allocation[270] = 20;
+        allocation[360] = 25;
     }
 
     function farm(uint256 _amount, uint256 _lockableDays) public {

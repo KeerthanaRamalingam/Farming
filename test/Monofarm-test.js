@@ -32,29 +32,29 @@ describe("Monofarm", function () {
     await tokenContract.connect(accounts[1]).approve(farm.address, web3.utils.toWei('1000', "ether"));
     expect(await tokenContract.allowance(accounts[1].address, farm.address)).to.equal(web3.utils.toWei('1000', "ether"));
 
-    await farm.connect(accounts[1]).farm(web3.utils.toWei('1000', "ether"), 90);
+    await farm.connect(accounts[1]).farm(web3.utils.toWei('1000', "ether"), 180);
     expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('1000', "ether"));
 
-    // Increase time to 90 days
-    await network.provider.send("evm_increaseTime", [8424000])
+    // Increase time to 180 days
+    await network.provider.send("evm_increaseTime", [15552000])
     await network.provider.send("evm_mine")
 
     var result = await farm.connect(accounts[1]).pendindRewards();
-    expect(result.wyzthReward).to.equal(web3.utils.toWei('900', "ether"));
-    expect(result.uleReward).to.equal(web3.utils.toWei('9000', "ether"))
+    expect(result.wyzthReward).to.equal(web3.utils.toWei('270', "ether"));
+    expect(result.uleReward).to.equal(web3.utils.toWei('2700', "ether"))
 
-    await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('900', "ether"))
-    expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('1900', "ether"));
+    await tokenContract.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('270', "ether"))
+    expect(await tokenContract.balanceOf(farm.address)).to.equal(web3.utils.toWei('1270', "ether"));
 
-    await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('9000', "ether"))
-    expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('9000', "ether"));
+    await tokenContract2.connect(accounts[0]).transfer(farm.address, web3.utils.toWei('2700', "ether"))
+    expect(await tokenContract2.balanceOf(farm.address)).to.equal(web3.utils.toWei('2700', "ether"));
 
     await farm.connect(accounts[1]).harvest();
-    expect(await tokenContract.balanceOf(farm.address)).to.equal(0);
+    expect(await tokenContract.balanceOf(farm.address)).to.equal(0);  
     expect(await tokenContract2.balanceOf(farm.address)).to.equal(0);
 
-    expect(await tokenContract.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('1900', "ether"));
-    expect(await tokenContract2.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('9000', "ether"));
+    expect(await tokenContract.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('1270', "ether"));
+    expect(await tokenContract2.balanceOf(accounts[1].address)).to.equal(web3.utils.toWei('2700', "ether"));
   })
 
   it("Emergency Withdraw", async function () {

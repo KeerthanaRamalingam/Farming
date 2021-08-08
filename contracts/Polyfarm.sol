@@ -268,10 +268,10 @@ contract PolyFarm is Ownable {
     constructor(address wyzth, address ULE) public {
         wyzthTOKEN = wyzth;
         ULETOKEN = ULE;
-        allocation[90] = 100;
-        allocation[180] = 150;
-        allocation[270] = 200;
-        allocation[360] = 250;
+        allocation[90] = 10;
+        allocation[180] = 15;
+        allocation[270] = 20;
+        allocation[360] = 25;
     }
 
     function addTokens(address[] memory token, uint256[] memory _minimumDeposit)
@@ -328,11 +328,11 @@ contract PolyFarm is Ownable {
             if (user.token == tokens[0]) {
                 return (wyzthReward, uleReward);
             } else if (user.token == tokens[3]) {
-                return (wyzthReward.mul(10), uleReward.mul(10));
+                return (wyzthReward.mul(100), uleReward.mul(100));
             } else if (user.token == tokens[2]) {
                 return (
-                    wyzthReward.div(2).mul(1E13),
-                    uleReward.div(2).mul(1E13)
+                    wyzthReward.div(2).mul(1E14),
+                    uleReward.div(2).mul(1E14)
                 );
             } else if (user.token == tokens[1]) {
                 return (wyzthReward.div(2), uleReward.div(2));
